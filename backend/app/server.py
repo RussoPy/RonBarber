@@ -3,13 +3,27 @@ from flask_cors import CORS
 from firebase_admin import credentials, initialize_app, db
 import os
 from datetime import datetime
+import base64
 
 app = Flask(__name__)
 CORS(app)
 
 # === 🔐 Firebase Setup ===
 # Load from file if running locally; in production, credentials should be set securely
-cred = credentials.Certificate("app/firebase.json")
+# Decode firebase.json from ENV
+firebase_b64 = os.environ.get("FIREBASE_CRED_BASE64")
+
+if not firebase_b64:
+    raise Exception("Missing FIREBASE_CRED_BASE64 env var")
+
+firebase_path = "/tmp/firebase.json"
+with open(firebase_path, "wb") as f:
+    f.write(base64.b64decode(firebase_b64))
+
+cred = credentials.Certificate(firebase_path)
+initialize_app(cred, {
+    'databaseURL': 'https://barberreminder-default-rtdb.europe-west1.firebasedatabase.app'
+})
 initialize_app(cred, {
     'databaseURL': 'https://barberreminder-default-rtdb.europe-west1.firebasedatabase.app'
 })
