@@ -12,7 +12,7 @@ def send_messages():
     return jsonify({"status": "started"}), 200
 
 
-@@app.route("/")
+@app.route("/")
 def home():
     return Response("🧠 Barber Reminder Flask Server is Running!", mimetype='text/plain')
 
