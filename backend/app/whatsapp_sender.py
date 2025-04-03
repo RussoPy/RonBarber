@@ -1,14 +1,22 @@
+import os
 import time
 import pyautogui
 import pyperclip
 import webbrowser
+from dotenv import load_dotenv
 import firebase_admin
 from firebase_admin import credentials, db
 
+# === 🌍 LOAD ENVIRONMENT VARIABLES ===
+load_dotenv()
+
+FIREBASE_CRED_PATH = os.getenv("FIREBASE_CRED_PATH")
+FIREBASE_DB_URL = os.getenv("FIREBASE_DB_URL")
+
 # === 🔐 FIREBASE SETUP ===
-cred = credentials.Certificate("firebase.json")
+cred = credentials.Certificate(FIREBASE_CRED_PATH)
 firebase_admin.initialize_app(cred, {
-    'databaseURL': 'https://barberreminder-default-rtdb.europe-west1.firebasedatabase.app'
+    'databaseURL': FIREBASE_DB_URL
 })
 
 # === 💬 SEND ONE MESSAGE ===
@@ -41,9 +49,6 @@ def send_message(phone, name, time_str):
         print("🧹 Tab closed")
 
         time.sleep(4)  # wait before next message
-
-    except Exception as e:
-        print(f"❌ Error sending to {name}: {e}")
 
     except Exception as e:
         print(f"❌ Error sending to {name}: {e}")

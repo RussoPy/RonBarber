@@ -1,0 +1,5 @@
+firebase-admin
+Flask
+pyautogui
+pyperclip
+python-dotenv
