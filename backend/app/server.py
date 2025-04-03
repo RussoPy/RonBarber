@@ -2,7 +2,7 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 import subprocess
 import os
-
+from flask import Flask, jsonify, Response
 app = Flask(__name__)
 CORS(app)
 
@@ -12,9 +12,11 @@ def send_messages():
     return jsonify({"status": "started"}), 200
 
 
-@app.route("/")
+@@app.route("/")
 def home():
-    return "🧠 Barber Reminder Flask Server is Running!"
+    return Response("🧠 Barber Reminder Flask Server is Running!", mimetype='text/plain')
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
