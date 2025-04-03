@@ -8,7 +8,7 @@ CORS(app)
 
 @app.route("/send_messages", methods=["GET"])
 def send_messages():
-    subprocess.Popen(["python", "whatsapp_sender.py"])
+    subprocess.Popen(["python", "app/whatsapp_sender.py"])
     return jsonify({"status": "started"}), 200
 
 
