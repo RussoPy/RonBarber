@@ -51,6 +51,9 @@ def send_messages():
     appointments = appt_ref.get()
     user_info = user_ref.get()
 
+    print(f"📥 Incoming send request for UID: {uid}, Date: {date}")
+    print("📋 Loaded appointments:", appointments)
+
     if not appointments:
         return jsonify({"message": "No appointments found."})
 
@@ -58,7 +61,10 @@ def send_messages():
     sent_count = 0
 
     for appt_id, appt in appointments.items():
+        print(f"\n🔍 Processing appointment {appt_id}: {appt}")
+
         if appt.get("sent"):
+            print("⏩ Already marked as sent, skipping.")
             continue
 
         name = appt.get("name")
@@ -66,9 +72,20 @@ def send_messages():
         time = appt.get("time")
 
         if not phone or not time:
+            print("⚠️ Missing phone or time, skipping.")
             continue
 
-        to_number = phone if phone.startswith('+') else f"+972{phone.lstrip('0')}"
+        # ✅ Normalize phone
+        if phone.startswith("+"):
+            to_number = phone
+        else:
+            to_number = f"+972{phone.lstrip('0')}"
+
+        # ✅ Optionally update Firebase with normalized number
+        appt_ref.child(appt_id).update({
+            "phone": to_number
+        })
+
         message = f"שלום {name}, תזכורת לתור שלך היום בשעה {time}. תודה, {barber_name} 💈"
 
         try:
@@ -83,14 +100,18 @@ def send_messages():
                 "sid": msg.sid,
                 "sent_at": datetime.now().isoformat()
             })
+
+            print(f"✅ Sent to {name} ({to_number}) — SID: {msg.sid}")
             sent_count += 1
 
         except Exception as e:
-            print(f"❌ Failed to send to {name}: {e}")
+            print(f"❌ Failed to send to {name} ({to_number}): {e}")
 
     db.reference(f"users/{uid}/message_stats/{date}").set(sent_count)
 
+    print(f"\n📊 {sent_count} messages sent for UID {uid} on {date}")
     return jsonify({ "message": f"{sent_count} messages sent for {date}" })
+
 
 # ==== Run ====
 if __name__ == "__main__":
