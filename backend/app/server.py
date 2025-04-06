@@ -6,6 +6,8 @@ import firebase_admin
 from firebase_admin import credentials, db
 from datetime import datetime
 from twilio.rest import Client
+import json
+
 
 # ==== 🔐 CONFIGURATION ====
 ADMIN_SECRET = os.environ.get("ADMIN_SECRET", "letmein123")
@@ -135,7 +137,8 @@ def get_usage():
         name = data.get("info", {}).get("name", "Unknown")
         total = data.get("message_total", 0)
         result.append({ "uid": uid, "name": name, "messages_sent": total })
-
+    print("🔥 USAGE DEBUG:")
+    print(json.dumps(result, indent=2))
     return jsonify(result), 200
 
 
