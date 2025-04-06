@@ -10,14 +10,14 @@ from twilio.rest import Client
 # ==== 🔐 CONFIGURATION ====
 TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_SID", "your_sid_here")
 TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_TOKEN", "your_token_here")
-TWILIO_SMS_FROM = "+1415xxxxxxx"
+TWILIO_SMS_FROM = "+18148461589"
 
 # ==== Firebase Init ====
 firebase_b64 = os.environ.get("FIREBASE_CRED_BASE64")
 if not firebase_b64:
     raise Exception("❌ Missing FIREBASE_CRED_BASE64 in environment variables")
 
-firebase_path = "/tmp/firebase.json"
+firebase_path = "firebase.json"
 with open(firebase_path, "wb") as f:
     f.write(base64.b64decode(firebase_b64))
 

@@ -2,3 +2,4 @@ Flask
 firebase-admin
 twilio
 gunicorn
+flask-cors
