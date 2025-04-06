@@ -1,6 +1,4 @@
-firebase-admin
 Flask
-flask-cors
-pyautogui
-pyperclip
-python-dotenv
+firebase-admin
+twilio
+gunicorn
