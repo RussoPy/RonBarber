@@ -91,8 +91,13 @@ def send_messages():
             "phone": to_number
         })
 
-        message = f"שלום {name}, תזכורת לתור שלך היום בשעה {time}. תודה, {barber_name} 💈"
+        # Get template from body or fallback
+        template = data.get("template") or f"שלום {{name}}, תזכורת לתור שלך היום בשעה {{time}}. תודה, {{barber}} 💈"
 
+        # Replace variables in template
+        message = template.replace("{{name}}", name or "לקוח") \
+                        .replace("{{time}}", time or "00:00") \
+                        .replace("{{barber}}", barber_name)
         try:
             msg = client.messages.create(
                 from_=TWILIO_SMS_FROM,
