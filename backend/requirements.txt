@@ -1,5 +1,5 @@
 Flask
-firebase-admin
-twilio
-gunicorn
 flask-cors
+firebase-admin
+requests
+gunicorn

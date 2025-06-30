@@ -5,15 +5,14 @@ import base64
 import firebase_admin
 from firebase_admin import credentials, db
 from datetime import datetime
-from twilio.rest import Client
 import json
-
+import requests
 
 # ==== 🔐 CONFIGURATION ====
 ADMIN_SECRET = os.environ.get("ADMIN_SECRET", "letmein123")
-TWILIO_ACCOUNT_SID = os.environ.get("TWILIO_SID", "your_sid_here")
-TWILIO_AUTH_TOKEN = os.environ.get("TWILIO_TOKEN", "your_token_here")
-TWILIO_SMS_FROM = "+18148461589"
+TEXTME_API_TOKEN = os.environ.get("TEXTME_TOKEN")
+TEXTME_USERNAME = os.environ.get("TEXTME_USERNAME", "galrusso3@gmail.com")
+TEXTME_SOURCE = os.environ.get("TEXTME_SOURCE", "12345")  # Must be registered in your TextMe account
 
 # ==== Firebase Init ====
 firebase_b64 = os.environ.get("FIREBASE_CRED_BASE64")
@@ -30,8 +29,6 @@ if not firebase_admin._apps:
         'databaseURL': 'https://barberreminder-default-rtdb.europe-west1.firebasedatabase.app'
     })
 
-client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-
 # ==== Flask Init ====
 app = Flask(__name__)
 CORS(app)
@@ -40,6 +37,7 @@ CORS(app)
 @app.route("/")
 def home():
     return Response("🧠 Barber Reminder Flask Server is Running!", mimetype='text/plain')
+
 
 @app.route("/send_messages", methods=["POST"])
 def send_messages():
@@ -80,15 +78,17 @@ def send_messages():
             print("⚠️ Missing phone or time, skipping.")
             continue
 
-        # ✅ Normalize phone
-        if phone.startswith("+"):
-            to_number = phone
+        # ✅ Normalize phone (TextMe expects local format like 05XXXXXXXX)
+        if phone.startswith("+972"):
+            local_number = "0" + phone[4:]
+        elif phone.startswith("972"):
+            local_number = "0" + phone[3:]
         else:
-            to_number = f"+972{phone.lstrip('0')}"
+            local_number = phone
 
-        # ✅ Optionally update Firebase with normalized number
+        # ✅ Save normalized number back to Firebase
         appt_ref.child(appt_id).update({
-            "phone": to_number
+            "phone": local_number
         })
 
         # Get template from body or fallback
@@ -96,26 +96,45 @@ def send_messages():
 
         # Replace variables in template
         message = template.replace("{{name}}", name or "לקוח") \
-                        .replace("{{time}}", time or "00:00") \
-                        .replace("{{barber}}", barber_name)
+                          .replace("{{time}}", time or "00:00") \
+                          .replace("{{barber}}", barber_name)
+
+        # ✅ Build TextMe payload
+        sms_payload = {
+            "user": {
+                "username": TEXTME_USERNAME,
+                "token": TEXTME_API_TOKEN
+            },
+            "username": TEXTME_USERNAME,
+            "source": TEXTME_SOURCE,
+            "destinations": {
+                "phone": local_number
+            },
+            "message": message
+        }
+
         try:
-            msg = client.messages.create(
-                from_=TWILIO_SMS_FROM,
-                body=message,
-                to=to_number
+            res = requests.post(
+                "https://my.textme.co.il/api",
+                json=sms_payload,
+                headers={"Content-Type": "application/json"}
             )
+            res_data = res.json()
 
-            appt_ref.child(appt_id).update({
-                "sent": True,
-                "sid": msg.sid,
-                "sent_at": datetime.now().isoformat()
-            })
+            if res_data.get("status") == 0:
+                appt_ref.child(appt_id).update({
+                    "sent": True,
+                    "sid": res_data.get("transaction_id", "n/a"),
+                    "sent_at": datetime.now().isoformat()
+                })
 
-            print(f"✅ Sent to {name} ({to_number}) — SID: {msg.sid}")
-            sent_count += 1
+                print(f"✅ Sent to {name} ({local_number}) — TXID: {res_data.get('transaction_id')}")
+                sent_count += 1
+            else:
+                print(f"❌ Failed to send to {name}: {res_data}")
 
         except Exception as e:
-            print(f"❌ Failed to send to {name} ({to_number}): {e}")
+            print(f"❌ Exception while sending to {name} ({local_number}): {e}")
 
     # 🧠 Save daily and total counters
     db.reference(f"users/{uid}/message_stats/{date}").set(sent_count)
@@ -128,6 +147,7 @@ def send_messages():
         "sent": sent_count,
         "total": total_attempts
     })
+
 
 @app.route("/admin/usage", methods=["GET"])
 def get_usage():
