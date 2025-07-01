@@ -75,7 +75,6 @@ def send_messages():
             print("⚠️ Missing phone or time, skipping.")
             continue
 
-        # Normalize phone number to local format
         if phone.startswith("+972"):
             local_number = "0" + phone[4:]
         elif phone.startswith("972"):
@@ -83,17 +82,19 @@ def send_messages():
         else:
             local_number = phone
 
-        appt_ref.child(appt_id).update({ "phone": local_number })
+        appt_ref.child(appt_id).update({"phone": local_number})
 
-        # Message template
         template = data.get("template") or f"שלום {{name}}, תזכורת לתור שלך היום בשעה {{time}}. תודה, {{barber}} 💈"
         message = template.replace("{{name}}", name or "לקוח") \
                           .replace("{{time}}", time or "00:00") \
                           .replace("{{barber}}", barber_name)
 
-        # ✅ TextMe API Payload (no token/password in body)
+        # ✅ Correct TextMe payload and headers
         sms_payload = {
             "sms": {
+                "user": {
+                    "username": "galrusso3@gmail.com"
+                },
                 "source": TEXTME_SOURCE,
                 "destinations": {
                     "phone": [
@@ -109,7 +110,7 @@ def send_messages():
 
         try:
             res = requests.post(
-                "https://my.textme.co.il/api",
+                "https://my.textme.co.il/api/send-sms",
                 json=sms_payload,
                 headers={
                     "Content-Type": "application/json",
