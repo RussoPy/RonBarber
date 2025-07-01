@@ -11,8 +11,6 @@ import requests
 # ==== 🔐 CONFIGURATION ====
 ADMIN_SECRET = os.environ.get("ADMIN_SECRET", "letmein123")
 TEXTME_API_TOKEN = os.environ.get("TEXTME_TOKEN")
-TEXTME_USERNAME = os.environ.get("TEXTME_USERNAME", "galrusso3@gmail.com")
-TEXTME_PASSWORD = os.environ.get("TEXTME_PASSWORD")  # ✅ NEW
 TEXTME_SOURCE = os.environ.get("TEXTME_SOURCE", "12345")
 
 # ==== Firebase Init ====
@@ -77,6 +75,7 @@ def send_messages():
             print("⚠️ Missing phone or time, skipping.")
             continue
 
+        # Normalize phone number to local format
         if phone.startswith("+972"):
             local_number = "0" + phone[4:]
         elif phone.startswith("972"):
@@ -86,19 +85,15 @@ def send_messages():
 
         appt_ref.child(appt_id).update({ "phone": local_number })
 
+        # Message template
         template = data.get("template") or f"שלום {{name}}, תזכורת לתור שלך היום בשעה {{time}}. תודה, {{barber}} 💈"
         message = template.replace("{{name}}", name or "לקוח") \
                           .replace("{{time}}", time or "00:00") \
                           .replace("{{barber}}", barber_name)
 
-        # ✅ Final TextMe payload with password
+        # ✅ TextMe API Payload (no token/password in body)
         sms_payload = {
             "sms": {
-                "user": {
-                    "username": TEXTME_USERNAME,
-                    "password": TEXTME_PASSWORD,  # ✅ CRITICAL
-                    "token": TEXTME_API_TOKEN
-                },
                 "source": TEXTME_SOURCE,
                 "destinations": {
                     "phone": [
@@ -116,7 +111,10 @@ def send_messages():
             res = requests.post(
                 "https://my.textme.co.il/api",
                 json=sms_payload,
-                headers={"Content-Type": "application/json"}
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {TEXTME_API_TOKEN}"
+                }
             )
             res_data = res.json()
             print("📨 Full API response from TextMe:")
