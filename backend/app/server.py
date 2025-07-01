@@ -12,6 +12,8 @@ import requests
 ADMIN_SECRET = os.environ.get("ADMIN_SECRET", "letmein123")
 TEXTME_API_TOKEN = os.environ.get("TEXTME_TOKEN")
 TEXTME_SOURCE = os.environ.get("TEXTME_SOURCE", "12345")
+TEXTME_USERNAME = os.environ.get("TEXTME_USERNAME", "galrusso3@gmail.com")  # ← הוסף שורה זו
+
 
 # ==== Firebase Init ====
 firebase_b64 = os.environ.get("FIREBASE_CRED_BASE64")
