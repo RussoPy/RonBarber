@@ -100,16 +100,22 @@ def send_messages():
 
         # ✅ Build TextMe payload (FIXED: removed top-level username)
         sms_payload = {
-            "user": {
-                "username": TEXTME_USERNAME,
-                "token": TEXTME_API_TOKEN
-            },
-            "source": TEXTME_SOURCE,
-            "destinations": {
-                "phone": local_number
-            },
-            "message": message
-        }
+                "sms": {
+                    "user": {
+                        "username": TEXTME_USERNAME,
+                        "token": TEXTME_API_TOKEN
+                    },
+                    "source": TEXTME_SOURCE,
+                    "destinations": {
+                        "phone": [
+                            {
+                                "_": local_number
+                            }
+                        ]
+                    },
+                    "message": message
+                }
+            }
 
         try:
             res = requests.post(
