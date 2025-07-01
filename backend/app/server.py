@@ -33,7 +33,6 @@ if not firebase_admin._apps:
 app = Flask(__name__)
 CORS(app)
 
-
 @app.route("/")
 def home():
     return Response("🧠 Barber Reminder Flask Server is Running!", mimetype='text/plain')
@@ -99,13 +98,12 @@ def send_messages():
                           .replace("{{time}}", time or "00:00") \
                           .replace("{{barber}}", barber_name)
 
-        # ✅ Build TextMe payload
+        # ✅ Build TextMe payload (FIXED: removed top-level username)
         sms_payload = {
             "user": {
                 "username": TEXTME_USERNAME,
                 "token": TEXTME_API_TOKEN
             },
-            "username": TEXTME_USERNAME,
             "source": TEXTME_SOURCE,
             "destinations": {
                 "phone": local_number
