@@ -82,18 +82,18 @@ def send_messages():
         else:
             local_number = phone
 
-        appt_ref.child(appt_id).update({"phone": local_number})
+        appt_ref.child(appt_id).update({ "phone": local_number })
 
         template = data.get("template") or f"שלום {{name}}, תזכורת לתור שלך היום בשעה {{time}}. תודה, {{barber}} 💈"
         message = template.replace("{{name}}", name or "לקוח") \
                           .replace("{{time}}", time or "00:00") \
                           .replace("{{barber}}", barber_name)
 
-        # ✅ Correct TextMe payload and headers
+        # ✅ TextMe payload
         sms_payload = {
             "sms": {
                 "user": {
-                    "username": "galrusso3@gmail.com"
+                    "username": TEXTME_USERNAME
                 },
                 "source": TEXTME_SOURCE,
                 "destinations": {
@@ -110,14 +110,22 @@ def send_messages():
 
         try:
             res = requests.post(
-                "https://my.textme.co.il/api/send-sms",
+                "https://my.textme.co.il/api",
                 json=sms_payload,
                 headers={
                     "Content-Type": "application/json",
                     "Authorization": f"Bearer {TEXTME_API_TOKEN}"
                 }
             )
-            res_data = res.json()
+
+            print("📨 Raw response text:", res.text)
+
+            try:
+                res_data = res.json()
+            except Exception:
+                print("❌ TextMe response is not valid JSON.")
+                return jsonify({"error": "Invalid response from SMS provider"}), 502
+
             print("📨 Full API response from TextMe:")
             print(json.dumps(res_data, ensure_ascii=False, indent=2))
 
