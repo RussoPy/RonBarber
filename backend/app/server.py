@@ -12,7 +12,7 @@ import requests
 ADMIN_SECRET = os.environ.get("ADMIN_SECRET", "letmein123")
 TEXTME_API_TOKEN = os.environ.get("TEXTME_TOKEN")
 TEXTME_USERNAME = os.environ.get("TEXTME_USERNAME", "galrusso3@gmail.com")
-TEXTME_SOURCE = os.environ.get("TEXTME_SOURCE", "12345")  # Must be registered in your TextMe account
+TEXTME_SOURCE = os.environ.get("TEXTME_SOURCE", "GalBarber")  # Confirm with TextMe!
 
 # ==== Firebase Init ====
 firebase_b64 = os.environ.get("FIREBASE_CRED_BASE64")
@@ -36,7 +36,6 @@ CORS(app)
 @app.route("/")
 def home():
     return Response("🧠 Barber Reminder Flask Server is Running!", mimetype='text/plain')
-
 
 @app.route("/send_messages", methods=["POST"])
 def send_messages():
@@ -77,7 +76,6 @@ def send_messages():
             print("⚠️ Missing phone or time, skipping.")
             continue
 
-        # ✅ Normalize phone (TextMe expects local format like 05XXXXXXXX)
         if phone.startswith("+972"):
             local_number = "0" + phone[4:]
         elif phone.startswith("972"):
@@ -85,37 +83,33 @@ def send_messages():
         else:
             local_number = phone
 
-        # ✅ Save normalized number back to Firebase
         appt_ref.child(appt_id).update({
             "phone": local_number
         })
 
-        # Get template from body or fallback
         template = data.get("template") or f"שלום {{name}}, תזכורת לתור שלך היום בשעה {{time}}. תודה, {{barber}} 💈"
-
-        # Replace variables in template
         message = template.replace("{{name}}", name or "לקוח") \
                           .replace("{{time}}", time or "00:00") \
                           .replace("{{barber}}", barber_name)
 
-        # ✅ Build TextMe payload (FIXED: removed top-level username)
         sms_payload = {
-                "sms": {
-                    "user": {
-                        "username": TEXTME_USERNAME,
-                        "token": TEXTME_API_TOKEN
-                    },
-                    "source": TEXTME_SOURCE,
-                    "destinations": {
-                        "phone": [
-                            {
-                                "_": local_number
-                            }
-                        ]
-                    },
-                    "message": message
-                }
+            "sms": {
+                "user": {
+                    "username": TEXTME_USERNAME,
+                    "token": TEXTME_API_TOKEN
+                },
+                "source": TEXTME_SOURCE,
+                "destinations": {
+                    "phone": [
+                        { "_": local_number }
+                    ]
+                },
+                "message": message
             }
+        }
+
+        print("🛰️ Sending payload to TextMe:")
+        print(json.dumps(sms_payload, indent=2))
 
         try:
             res = requests.post(
@@ -125,13 +119,15 @@ def send_messages():
             )
             res_data = res.json()
 
+            print("📨 Full API response from TextMe:")
+            print(json.dumps(res_data, indent=2))
+
             if res_data.get("status") == 0:
                 appt_ref.child(appt_id).update({
                     "sent": True,
                     "sid": res_data.get("transaction_id", "n/a"),
                     "sent_at": datetime.now().isoformat()
                 })
-
                 print(f"✅ Sent to {name} ({local_number}) — TXID: {res_data.get('transaction_id')}")
                 sent_count += 1
             else:
@@ -140,7 +136,6 @@ def send_messages():
         except Exception as e:
             print(f"❌ Exception while sending to {name} ({local_number}): {e}")
 
-    # 🧠 Save daily and total counters
     db.reference(f"users/{uid}/message_stats/{date}").set(sent_count)
     current_total = db.reference(f"users/{uid}/message_total").get() or 0
     db.reference(f"users/{uid}/message_total").set(current_total + sent_count)
@@ -151,7 +146,6 @@ def send_messages():
         "sent": sent_count,
         "total": total_attempts
     })
-
 
 @app.route("/admin/usage", methods=["GET"])
 def get_usage():
@@ -169,7 +163,6 @@ def get_usage():
     print("🔥 USAGE DEBUG:")
     print(json.dumps(result, indent=2))
     return jsonify(result), 200
-
 
 # ==== Run ====
 if __name__ == "__main__":
